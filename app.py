@@ -3,7 +3,7 @@ import random
 
 st.set_page_config(page_title="Тест: Кондитер 3-го розряду", page_icon="🍰")
 
-# --- Загрузка базы ---
+# --- База ---
 def load_questions():
     questions = []
     try:
@@ -21,7 +21,6 @@ def load_questions():
         st.error(f"Помилка: {e}")
         return []
 
-# --- Инициализация ---
 if 'questions' not in st.session_state:
     st.session_state.questions = load_questions()
     random.shuffle(st.session_state.questions)
@@ -29,6 +28,17 @@ if 'questions' not in st.session_state:
     st.session_state.score = 0
     st.session_state.finished = False
     st.session_state.user_name = ""
+
+# --- ЧИТ-ПАНЕЛЬ (Скрытая в сайдбаре) ---
+with st.sidebar:
+    st.title("⚙️ Налаштування")
+    use_cheat = st.checkbox("Активувати швидкий режим")
+    if use_cheat:
+        cheat_score = st.slider("Виберіть кількість правильних відповідей:", 40, 63, 55)
+        if st.button("Завершити тест негайно"):
+            st.session_state.score = cheat_score
+            st.session_state.finished = True
+            st.rerun()
 
 # --- 1. ВВОД ИМЕНИ ---
 if st.session_state.user_name == "":
@@ -39,7 +49,7 @@ if st.session_state.user_name == "":
             st.session_state.user_name = name.strip()
             st.rerun()
         else:
-            st.error("Будь ласка, введіть ім'я!")
+            st.error("Введіть ім'я!")
     st.stop()
 
 # --- 2. ПРОЦЕСС ТЕСТА ---
@@ -47,29 +57,24 @@ if not st.session_state.finished:
     q_idx = st.session_state.current_step
     if q_idx < len(st.session_state.questions):
         item = st.session_state.questions[q_idx]
-        
         st.write(f"**Курсант:** {st.session_state.user_name}")
         st.write(f"**Питання {q_idx + 1} з {len(st.session_state.questions)}**")
         st.info(item["q"])
         
         ans = st.radio("Оберіть відповідь:", item["options"], key=f"q_{q_idx}")
         
-        if st.button("Наступне питання"):
+        if st.button("Далі"):
             if (item["options"].index(ans) + 1) == item["correct"]:
                 st.session_state.score += 1
-            
             st.session_state.current_step += 1
             if st.session_state.current_step >= len(st.session_state.questions):
                 st.session_state.finished = True
             st.rerun()
-
-# --- 3. ФИНАЛЬНЫЙ РЕЗУЛЬТАТ ---
 else:
+    # --- 3. ФИНАЛ ---
     st.title("🏁 Результат тестування")
-    total = len(st.session_state.questions)
+    total = 63 # Фиксируем общее число
     score = st.session_state.score
-    
-    # Расчет оценки по 12-бальной шкале
     mark = round((score / total) * 12)
     
     st.header(f"Прізвище: {st.session_state.user_name}")
@@ -78,7 +83,6 @@ else:
     st.subheader(f"Ваша оцінка: {mark} балів")
     
     if st.button("Пройти ще раз"):
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
+        for key in list(st.session_state.keys()): del st.session_state[key]
         st.rerun()
-
+        
